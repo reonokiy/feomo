@@ -2,9 +2,9 @@ import dayjs from "dayjs";
 import DOMPurify from "dompurify";
 import { ArrowUpRightIcon, HeartIcon, Loader2Icon, MessageCircleIcon, Repeat2Icon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import ProgressiveImage from "@/components/ProgressiveImage";
 import { toast } from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
+import ProgressiveImage from "@/components/ProgressiveImage";
 import { Button } from "@/components/ui/button";
 import type { mastodon } from "@/lib/gotosocial";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,14 @@ import { accountStore, statusStore } from "@/store";
 interface TimelineStatusCardProps {
   status: mastodon.v1.Status;
 }
+
+const getAttachmentMimeType = (attachment: mastodon.v1.MediaAttachment): string | undefined => {
+  if ("mimeType" in attachment) {
+    const mime = (attachment as { mimeType?: unknown }).mimeType;
+    return typeof mime === "string" ? mime : undefined;
+  }
+  return undefined;
+};
 
 const TimelineStatusCard = ({ status }: TimelineStatusCardProps) => {
   const navigate = useNavigate();
@@ -166,7 +174,7 @@ const MediaAttachmentPreview = ({ attachment }: MediaAttachmentPreviewProps) => 
           preload="metadata"
           onClick={(event) => event.stopPropagation()}
         >
-          <source src={mediaUrl} type={attachment.mimeType ?? undefined} />
+          <source src={mediaUrl} type={getAttachmentMimeType(attachment) ?? undefined} />
           Your browser does not support embedded video.{" "}
           <a href={mediaUrl} target="_blank" rel="noopener noreferrer">
             Open media
@@ -177,32 +185,25 @@ const MediaAttachmentPreview = ({ attachment }: MediaAttachmentPreviewProps) => 
     );
   }
 
-  if (attachment.type === "video" || attachment.type === "audio") {
-    if (attachment.type === "audio") {
-      const audioUrl = targetUrl || attachment.remoteUrl;
-      if (!audioUrl) {
-        return null;
-      }
-
-      return (
-        <div className="flex flex-col gap-2 rounded-md border border-border p-3 text-sm">
-          <span className="font-medium capitalize">Audio</span>
-          <audio
-            className="w-full"
-            controls
-            preload="none"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <source src={audioUrl} type={attachment.mimeType ?? undefined} />
-            Your browser does not support audio playback.{" "}
-            <a href={audioUrl} target="_blank" rel="noopener noreferrer">
-              Open media
-            </a>
-            .
-          </audio>
-        </div>
-      );
+  if (attachment.type === "audio") {
+    const audioUrl = targetUrl || attachment.remoteUrl;
+    if (!audioUrl) {
+      return null;
     }
+
+    return (
+      <div className="flex flex-col gap-2 rounded-md border border-border p-3 text-sm">
+        <span className="font-medium capitalize">Audio</span>
+        <audio className="w-full" controls preload="none" onClick={(event) => event.stopPropagation()}>
+          <source src={audioUrl} type={getAttachmentMimeType(attachment) ?? undefined} />
+          Your browser does not support audio playback.{" "}
+          <a href={audioUrl} target="_blank" rel="noopener noreferrer">
+            Open media
+          </a>
+          .
+        </audio>
+      </div>
+    );
   }
 
   return (
@@ -472,7 +473,6 @@ const TimelineActionBar = ({ status, actionStatus }: TimelineActionBarProps) => 
           </Link>
         </Button>
       </div>
-
     </div>
   );
 };

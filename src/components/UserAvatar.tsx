@@ -1,5 +1,5 @@
-import ProgressiveImage from "./ProgressiveImage";
 import { cn } from "@/lib/utils";
+import ProgressiveImage from "./ProgressiveImage";
 
 interface Props {
   avatarUrl?: string;

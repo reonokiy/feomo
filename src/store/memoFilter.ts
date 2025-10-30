@@ -8,6 +8,7 @@
  */
 import { uniqBy } from "lodash-es";
 import { makeObservable, observable, action, computed } from "mobx";
+import { getPlatformEnvironment } from "@/core/platform/environment";
 import { StandardState } from "./base-store";
 
 /**
@@ -109,8 +110,9 @@ class MemoFilterState extends StandardState {
    */
   private initFromURL(): void {
     try {
-      const searchParams = new URLSearchParams(window.location.search);
-      this.filters = parseFilterQuery(searchParams.get("filter"));
+      const navigation = getPlatformEnvironment().navigation;
+      const searchParams = navigation?.getSearchParams();
+      this.filters = parseFilterQuery(searchParams?.get("filter") ?? null);
     } catch (error) {
       console.warn("Failed to parse filters from URL:", error);
       this.filters = [];

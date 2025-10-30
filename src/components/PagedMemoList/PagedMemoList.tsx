@@ -2,7 +2,6 @@ import { ArrowUpIcon, LoaderIcon } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { matchPath } from "react-router-dom";
-import PullToRefresh from "react-simple-pull-to-refresh";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_LIST_MEMOS_PAGE_SIZE } from "@/helpers/consts";
 import useResponsiveWidth from "@/hooks/useResponsiveWidth";
@@ -14,6 +13,8 @@ import { useTranslate } from "@/utils/i18n";
 import Empty from "../Empty";
 import MasonryView, { MemoRenderContext } from "../MasonryView";
 import MemoEditor from "../MemoEditor";
+
+const PULL_REFRESH_THRESHOLD = 80;
 
 interface Props {
   renderer: (memo: Memo, context?: MemoRenderContext) => JSX.Element;
@@ -31,9 +32,12 @@ const PagedMemoList = observer((props: Props) => {
   // Simplified state management - separate state variables for clarity
   const [isRequesting, setIsRequesting] = useState(true);
   const [nextPageToken, setNextPageToken] = useState("");
+  const [isPulling, setIsPulling] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
 
   // Ref to manage auto-fetch timeout to prevent memory leaks
   const autoFetchTimeoutRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
 
   // Apply custom sorting if provided, otherwise use store memos directly
   const sortedMemoList = props.listSort ? props.listSort(memoStore.state.memos) : memoStore.state.memos;
@@ -166,26 +170,61 @@ const PagedMemoList = observer((props: Props) => {
     </div>
   );
 
+  const handleTouchStart: React.TouchEventHandler<HTMLDivElement> = (event) => {
+    if (window.scrollY === 0) {
+      touchStartYRef.current = event.touches[0]?.clientY ?? null;
+    } else {
+      touchStartYRef.current = null;
+    }
+  };
+
+  const handleTouchMove: React.TouchEventHandler<HTMLDivElement> = (event) => {
+    if (touchStartYRef.current === null) {
+      return;
+    }
+    const currentY = event.touches[0]?.clientY ?? touchStartYRef.current;
+    const distance = currentY - touchStartYRef.current;
+    if (distance > 0) {
+      setIsPulling(true);
+      setPullDistance(Math.min(distance, 150));
+    } else {
+      setIsPulling(false);
+      setPullDistance(0);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (isPulling && pullDistance >= PULL_REFRESH_THRESHOLD) {
+      void refreshList();
+    }
+    setIsPulling(false);
+    setPullDistance(0);
+    touchStartYRef.current = null;
+  };
+
+  const indicatorOpacity = isPulling ? Math.min(1, pullDistance / (PULL_REFRESH_THRESHOLD * 1.2)) : 0;
+  const hasReachedThreshold = isPulling && pullDistance >= PULL_REFRESH_THRESHOLD;
+
   if (md) {
     return children;
   }
 
   return (
-    <PullToRefresh
-      onRefresh={() => refreshList()}
-      pullingContent={
-        <div className="w-full flex flex-row justify-center items-center my-4">
-          <LoaderIcon className="opacity-60" />
-        </div>
-      }
-      refreshingContent={
-        <div className="w-full flex flex-row justify-center items-center my-4">
-          <LoaderIcon className="animate-spin" />
-        </div>
-      }
+    <div
+      className="relative flex flex-col"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
     >
+      <div
+        className="pointer-events-none flex h-14 w-full flex-row items-center justify-center text-xs font-medium text-muted-foreground transition-opacity"
+        style={{ opacity: indicatorOpacity }}
+      >
+        <LoaderIcon className={`h-4 w-4 transition-transform ${hasReachedThreshold ? "animate-spin" : ""}`} />
+      </div>
       {children}
-    </PullToRefresh>
+    </div>
   );
 });
 

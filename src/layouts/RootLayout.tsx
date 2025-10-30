@@ -7,8 +7,8 @@ import useResponsiveWidth from "@/hooks/useResponsiveWidth";
 import { gtsClient } from "@/lib/gotosocial";
 import { cn } from "@/lib/utils";
 import Loading from "@/pages/Loading";
-import { accountStore } from "@/store";
 import { Routes } from "@/router";
+import { accountStore } from "@/store";
 
 const RootLayout = observer(() => {
   const { sm } = useResponsiveWidth();

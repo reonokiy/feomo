@@ -7,6 +7,7 @@
  * - Common patterns for all stores
  */
 import { makeObservable, action } from "mobx";
+import { getPlatformEnvironment } from "@/core/platform/environment";
 import { RequestDeduplicator, StoreError } from "./store-utils";
 
 /**
@@ -119,15 +120,17 @@ export interface ClientStoreConfig {
  */
 export function createClientStore<TState extends BaseState>(state: TState, config: ClientStoreConfig) {
   // Load from localStorage if enabled
+  const storage = getPlatformEnvironment().storage;
+
   if (config.persistence) {
     try {
-      const cached = localStorage.getItem(config.persistence.key);
+      const cached = storage.getItem(config.persistence.key);
       if (cached) {
         const data = config.persistence.deserialize ? config.persistence.deserialize(cached) : JSON.parse(cached);
         Object.assign(state, data);
       }
     } catch (error) {
-      console.warn(`Failed to load ${config.name} from localStorage:`, error);
+      console.warn(`Failed to load ${config.name} from storage:`, error);
     }
   }
 
@@ -142,7 +145,7 @@ export function createClientStore<TState extends BaseState>(state: TState, confi
       if (config.persistence) {
         try {
           const data = config.persistence.serialize ? config.persistence.serialize(state) : JSON.stringify(state);
-          localStorage.setItem(config.persistence.key, data);
+          storage.setItem(config.persistence.key, data);
         } catch (error) {
           console.warn(`Failed to persist ${config.name}:`, error);
         }
@@ -154,7 +157,11 @@ export function createClientStore<TState extends BaseState>(state: TState, confi
      */
     clearPersistence(): void {
       if (config.persistence) {
-        localStorage.removeItem(config.persistence.key);
+        try {
+          storage.removeItem(config.persistence.key);
+        } catch (error) {
+          console.warn(`Failed to clear persistence for ${config.name}:`, error);
+        }
       }
     },
   };

@@ -1,0 +1,20 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["../src/*"]
+    },
+    "types": ["react", "react-native"]
+  },
+  "include": [
+    "index.js",
+    "src",
+    "../src/core",
+    "../src/utils",
+    "../src/store",
+    "../src/lib",
+    "../src/config.ts"
+  ]
+}

@@ -2,10 +2,14 @@
   "name": "memos",
   "private": true,
   "scripts": {
+    "start": "vite",
     "dev": "vite",
     "build": "vite build",
     "release": "vite build --mode release --outDir=../server/router/frontend/dist --emptyOutDir",
-    "lint": "tsc --noEmit --skipLibCheck && eslint --ext .js,.ts,.tsx, src"
+    "lint": "tsc --noEmit --skipLibCheck && eslint --ext .js,.ts,.tsx, src",
+    "mobile:start": "pnpm --filter mobile start",
+    "mobile:android": "pnpm --filter mobile android",
+    "mobile:ios": "pnpm --filter mobile ios"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -53,7 +57,6 @@
     "react-leaflet": "^4.2.1",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.9.1",
-    "react-simple-pull-to-refresh": "^1.3.3",
     "react-use": "^17.6.0",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",

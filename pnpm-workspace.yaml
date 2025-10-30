@@ -1,0 +1,5 @@
+packages:
+  - .
+  - mobile
+
+nodeLinker: hoisted

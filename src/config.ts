@@ -1,51 +1,67 @@
-// Environment configuration for GoToSocial integration
+import { buildAppConfig, type AppConfig } from "@/core/config/app-config";
+import { getPlatformEnvironment } from "@/core/platform/environment";
 
-export interface AppConfig {
-  // GoToSocial instance URL
-  instanceUrl: string;
+type NullableEnvValue = string | undefined | null;
 
-  // OAuth credentials (optional - will auto-register if not provided)
-  clientId?: string;
-  clientSecret?: string;
-
-  // App metadata
-  appName: string;
-  appWebsite: string;
-
-  // OAuth scopes
-  scopes: string[];
-
-  // Redirect URI for OAuth callback
-  redirectUri: string;
+function getImportMetaEnv(): Record<string, NullableEnvValue> | undefined {
+  try {
+    return (import.meta as unknown as { env?: Record<string, NullableEnvValue> })?.env;
+  } catch {
+    return undefined;
+  }
 }
 
-// Validate and normalize instance URL
-function normalizeInstanceUrl(url: string): string {
-  if (!url) {
-    throw new Error("VITE_GOTOSOCIAL_INSTANCE_URL is required. Please configure it in .env.local");
+function readEnvValue(key: string): NullableEnvValue {
+  const importMetaEnv = getImportMetaEnv();
+  if (importMetaEnv && key in importMetaEnv) {
+    return importMetaEnv[key];
   }
 
-  // Remove trailing slash
-  url = url.replace(/\/$/, "");
-
-  // Ensure https:// prefix
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    url = `https://${url}`;
+  if (typeof process !== "undefined" && process.env && key in process.env) {
+    return process.env[key];
   }
 
-  return url;
+  return undefined;
 }
 
-// Get configuration from environment variables
-export const config: AppConfig = {
-  instanceUrl: normalizeInstanceUrl(import.meta.env.VITE_GOTOSOCIAL_INSTANCE_URL || ""),
-  clientId: import.meta.env.VITE_GOTOSOCIAL_CLIENT_ID,
-  clientSecret: import.meta.env.VITE_GOTOSOCIAL_CLIENT_SECRET,
-  appName: import.meta.env.VITE_APP_NAME || "Memos for GoToSocial",
-  appWebsite: import.meta.env.VITE_APP_WEBSITE || window.location.origin,
-  scopes: ["read", "write", "follow"],
-  redirectUri: `${window.location.origin}/auth/callback`,
-};
+let cachedConfig: AppConfig | null = null;
 
-// Export individual values for convenience
-export const { instanceUrl, clientId, clientSecret, appName, appWebsite, scopes, redirectUri } = config;
+export function getAppConfig(): AppConfig {
+  if (!cachedConfig) {
+    const environment = getPlatformEnvironment();
+    cachedConfig = buildAppConfig({
+      instanceUrl: readEnvValue("VITE_GOTOSOCIAL_INSTANCE_URL"),
+      clientId: readEnvValue("VITE_GOTOSOCIAL_CLIENT_ID"),
+      clientSecret: readEnvValue("VITE_GOTOSOCIAL_CLIENT_SECRET"),
+      appName: readEnvValue("VITE_APP_NAME"),
+      appWebsite: readEnvValue("VITE_APP_WEBSITE"),
+      scopes: readEnvValue("VITE_GOTOSOCIAL_SCOPES"),
+      redirectUri: readEnvValue("VITE_GOTOSOCIAL_REDIRECT_URI"),
+      defaultRedirectPath: "/auth/callback",
+      origin: environment.origin,
+    });
+  }
+
+  return cachedConfig;
+}
+
+export function resetAppConfig(): void {
+  cachedConfig = null;
+}
+
+export const config = new Proxy({} as AppConfig, {
+  get(_target, prop: keyof AppConfig) {
+    return getAppConfig()[prop];
+  },
+  ownKeys() {
+    return Reflect.ownKeys(getAppConfig());
+  },
+  getOwnPropertyDescriptor(_target, prop: keyof AppConfig) {
+    return {
+      configurable: true,
+      enumerable: true,
+      value: getAppConfig()[prop],
+      writable: false,
+    };
+  },
+}) as AppConfig;

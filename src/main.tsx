@@ -5,6 +5,7 @@ import { Toaster } from "react-hot-toast";
 import { RouterProvider } from "react-router-dom";
 import "./i18n";
 import "./index.css";
+import "./platform/web/environment";
 import router from "./router";
 // Configure MobX before importing any stores
 import "./store/config";

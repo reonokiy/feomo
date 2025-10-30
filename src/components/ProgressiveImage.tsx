@@ -43,11 +43,7 @@ const ProgressiveImage = ({ previewUrl, fullUrl, className, alt = "", ...rest }:
       {...rest}
       src={source || undefined}
       alt={alt}
-      className={cn(
-        "transition-all duration-500 ease-out",
-        isPreviewActive ? "scale-[1.02] blur-sm" : "scale-100 blur-0",
-        className,
-      )}
+      className={cn("transition-all duration-500 ease-out", isPreviewActive ? "scale-[1.02] blur-sm" : "scale-100 blur-0", className)}
     />
   );
 };

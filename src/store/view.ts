@@ -5,6 +5,7 @@
  * This is a client state store that persists to localStorage.
  */
 import { makeObservable, observable } from "mobx";
+import { getPlatformEnvironment } from "@/core/platform/environment";
 import { StandardState } from "./base-store";
 
 const LOCAL_STORAGE_KEY = "memos-view-setting";
@@ -52,8 +53,9 @@ class ViewState extends StandardState {
     Object.assign(this, partial);
 
     // Persist to localStorage
+    const storage = getPlatformEnvironment().storage;
     try {
-      localStorage.setItem(
+      storage.setItem(
         LOCAL_STORAGE_KEY,
         JSON.stringify({
           orderByTimeAsc: this.orderByTimeAsc,
@@ -73,8 +75,10 @@ const viewStore = (() => {
   const state = new ViewState();
 
   // Load from localStorage on initialization
+  const storage = getPlatformEnvironment().storage;
+
   try {
-    const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const cached = storage.getItem(LOCAL_STORAGE_KEY);
     if (cached) {
       const data = JSON.parse(cached);
 
@@ -89,7 +93,7 @@ const viewStore = (() => {
       }
     }
   } catch (error) {
-    console.warn("Failed to load view settings from localStorage:", error);
+    console.warn("Failed to load view settings from storage:", error);
   }
 
   /**
@@ -122,7 +126,11 @@ const viewStore = (() => {
    * Clear persisted settings
    */
   const clearStorage = (): void => {
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    try {
+      storage.removeItem(LOCAL_STORAGE_KEY);
+    } catch (error) {
+      console.warn("Failed to clear view settings from storage:", error);
+    }
   };
 
   return {
