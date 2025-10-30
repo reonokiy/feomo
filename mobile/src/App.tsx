@@ -1,8 +1,12 @@
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
-import { Linking, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { config } from "@/config";
+import { observer } from "mobx-react-lite";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { gtsClient } from "@/lib/gotosocial";
+import { accountStore } from "@/store";
+import HomeScreen from "./screens/HomeScreen";
+import SignInScreen from "./screens/SignInScreen";
 
 const styles = StyleSheet.create({
   container: {
@@ -10,121 +14,78 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f172a",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
   },
-  card: {
-    width: "100%",
-    borderRadius: 16,
-    padding: 24,
-    backgroundColor: "#1e293b",
-    gap: 16,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "600",
-    color: "#f8fafc",
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#cbd5f5",
-  },
-  button: {
-    backgroundColor: "#38bdf8",
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: "#0f172a",
-    fontWeight: "600",
+  message: {
     fontSize: 16,
-  },
-  urlText: {
-    fontSize: 12,
-    color: "#94a3b8",
-  },
-  statusText: {
-    fontSize: 14,
     color: "#f8fafc",
-  },
-  errorText: {
-    fontSize: 14,
-    color: "#f87171",
+    marginTop: 8,
   },
 });
 
-const App = () => {
-  const [statusMessage, setStatusMessage] = useState<string>("Ready to connect.");
-  const [authUrl, setAuthUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const App = observer(() => {
+  const [isInitializingAccount, setIsInitializingAccount] = useState(false);
+  const [initializationError, setInitializationError] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const currentAccount = accountStore.state.currentAccount;
 
-  const handleGenerateAuthUrl = async () => {
-    setIsLoading(true);
-    setError(null);
-    setStatusMessage("Preparing OAuth request…");
+  // Check authentication status safely after component mounts
+  useEffect(() => {
+    setIsAuthenticated(gtsClient.isAuthenticated());
+  }, []);
 
-    try {
-      const url = await gtsClient.getAuthorizationUrl();
-      setAuthUrl(url);
-      setStatusMessage("OAuth URL generated successfully.");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to generate authorization URL.";
-      setError(message);
-      setStatusMessage("Unable to prepare OAuth request.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleOpenAuthUrl = async () => {
-    if (!authUrl) return;
-    const supported = await Linking.canOpenURL(authUrl);
-
-    if (!supported) {
-      setError("Device cannot open the authorization URL.");
+  useEffect(() => {
+    if (!isAuthenticated) {
       return;
     }
 
-    await Linking.openURL(authUrl);
-  };
+    let cancelled = false;
+    setIsInitializingAccount(true);
+    setInitializationError(null);
+
+    const run = async () => {
+      try {
+        await accountStore.initialize();
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        const message = error instanceof Error ? error.message : "Failed to prepare account information.";
+        setInitializationError(message);
+      } finally {
+        if (!cancelled) {
+          setIsInitializingAccount(false);
+        }
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaProvider>
       <StatusBar style="light" />
-      <View style={styles.card}>
-        <Text style={styles.title}>Memos Mobile</Text>
-        <Text style={styles.subtitle}>Instance: {config.instanceUrl}</Text>
-        <Text style={styles.subtitle}>Redirect URI: {config.redirectUri}</Text>
-
-        <TouchableOpacity
-          activeOpacity={0.85}
-          style={[styles.button, isLoading ? styles.buttonDisabled : null]}
-          onPress={handleGenerateAuthUrl}
-          disabled={isLoading}
-        >
-          <Text style={styles.buttonText}>{isLoading ? "Loading…" : "Generate OAuth URL"}</Text>
-        </TouchableOpacity>
-
-        {authUrl ? (
-          <>
-            <Text style={styles.statusText}>Authorization URL ready:</Text>
-            <TouchableOpacity onPress={handleOpenAuthUrl}>
-              <Text style={[styles.urlText, { textDecorationLine: "underline" }]}>{authUrl}</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <Text style={styles.statusText}>{statusMessage}</Text>
-        )}
-
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-      </View>
-    </SafeAreaView>
+      {!isAuthenticated ? (
+        <SignInScreen />
+      ) : isInitializingAccount && !currentAccount ? (
+        <SafeAreaView style={styles.container}>
+          <ActivityIndicator size="large" color="#38bdf8" />
+          <Text style={styles.message}>Loading your account…</Text>
+        </SafeAreaView>
+      ) : initializationError && !currentAccount ? (
+        <SafeAreaView style={styles.container}>
+          <View>
+            <Text style={[styles.message, { color: "#f87171" }]}>{initializationError}</Text>
+          </View>
+        </SafeAreaView>
+      ) : (
+        <HomeScreen />
+      )}
+    </SafeAreaProvider>
   );
-};
+});
 
 export default App;
-

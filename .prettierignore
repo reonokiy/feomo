@@ -1,0 +1,43 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+dist
+build
+out
+.next
+.nuxt
+.cache
+.parcel-cache
+.expo
+.expo-shared
+
+# Lock files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Logs
+*.log
+logs
+
+# Coverage
+coverage
+.nyc_output
+
+# Environment
+.env
+.env.*
+
+# Generated files
+src/types/proto
+
+# Mobile builds
+mobile/android
+mobile/ios
+
+# Other
+.DS_Store
+*.min.js
+*.min.css

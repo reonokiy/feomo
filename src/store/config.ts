@@ -11,6 +11,26 @@
  */
 import { configure } from "mobx";
 
+const isDevelopment = (() => {
+  if (typeof globalThis !== "undefined") {
+    const metaEnv = (globalThis as { __APP_META_ENV__?: Record<string, unknown> }).__APP_META_ENV__;
+    if (metaEnv && "DEV" in metaEnv) {
+      return Boolean(metaEnv.DEV);
+    }
+  }
+
+  if (typeof process !== "undefined" && process.env) {
+    if (process.env.NODE_ENV) {
+      return process.env.NODE_ENV !== "production";
+    }
+    if ("EXPO_PUBLIC_DEV_SERVER" in process.env) {
+      return true;
+    }
+  }
+
+  return false;
+})();
+
 /**
  * Configure MobX with production-safe settings
  * This runs immediately when the module is imported
@@ -50,7 +70,7 @@ configure({
  * Call this in main.tsx if you want stricter checking
  */
 export function enableStrictMode() {
-  if (import.meta.env.DEV) {
+  if (isDevelopment) {
     configure({
       enforceActions: "observed", // Enforce actions only for observed values
       computedRequiresReaction: false, // Don't warn about computed access

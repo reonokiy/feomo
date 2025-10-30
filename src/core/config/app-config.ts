@@ -33,7 +33,9 @@ const DEFAULT_SCOPES = ["read", "write", "follow"];
 
 function normalizeInstanceUrl(url: string | null | undefined): string {
   if (!url || url.trim() === "") {
-    throw new Error("GoToSocial instance URL is required (VITE_GOTOSOCIAL_INSTANCE_URL).");
+    // For mobile apps, return a placeholder URL that will be configured by user
+    // This allows the app to start without crashing
+    return "https://placeholder.invalid";
   }
 
   let normalized = url.trim();

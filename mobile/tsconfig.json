@@ -6,15 +6,8 @@
     "paths": {
       "@/*": ["../src/*"]
     },
-    "types": ["react", "react-native"]
+    "types": ["react", "react-native"],
+    "allowArbitraryExtensions": true
   },
-  "include": [
-    "index.js",
-    "src",
-    "../src/core",
-    "../src/utils",
-    "../src/store",
-    "../src/lib",
-    "../src/config.ts"
-  ]
+  "include": ["index.js", "src"]
 }

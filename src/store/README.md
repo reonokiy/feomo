@@ -13,14 +13,15 @@ The store architecture follows a clear separation of concerns:
 
 ### Server State Stores (API Data)
 
-| Store | File | Purpose |
-|-------|------|---------|
-| `memoStore` | `memo.ts` | Memo CRUD operations, optimistic updates |
-| `userStore` | `user.ts` | User authentication, settings, stats |
-| `workspaceStore` | `workspace.ts` | Workspace profile and settings |
-| `attachmentStore` | `attachment.ts` | File attachment management |
+| Store             | File            | Purpose                                  |
+| ----------------- | --------------- | ---------------------------------------- |
+| `memoStore`       | `memo.ts`       | Memo CRUD operations, optimistic updates |
+| `userStore`       | `user.ts`       | User authentication, settings, stats     |
+| `workspaceStore`  | `workspace.ts`  | Workspace profile and settings           |
+| `attachmentStore` | `attachment.ts` | File attachment management               |
 
 **Features:**
+
 - ✅ Request deduplication (prevents duplicate API calls)
 - ✅ Structured error handling with `StoreError`
 - ✅ Computed property memoization for performance
@@ -29,25 +30,26 @@ The store architecture follows a clear separation of concerns:
 
 ### Client State Stores (UI State)
 
-| Store | File | Purpose | Persistence |
-|-------|------|---------|-------------|
-| `viewStore` | `view.ts` | Display preferences (sort, layout) | localStorage |
-| `memoFilterStore` | `memoFilter.ts` | Active search filters | URL params |
+| Store             | File            | Purpose                            | Persistence  |
+| ----------------- | --------------- | ---------------------------------- | ------------ |
+| `viewStore`       | `view.ts`       | Display preferences (sort, layout) | localStorage |
+| `memoFilterStore` | `memoFilter.ts` | Active search filters              | URL params   |
 
 **Features:**
+
 - ✅ No API calls (instant updates)
 - ✅ localStorage persistence (viewStore)
 - ✅ URL synchronization (memoFilterStore - shareable links)
 
 ### Utilities
 
-| File | Purpose |
-|------|---------|
-| `base-store.ts` | Base classes and factory functions |
+| File             | Purpose                                                   |
+| ---------------- | --------------------------------------------------------- |
+| `base-store.ts`  | Base classes and factory functions                        |
 | `store-utils.ts` | Request deduplication, error handling, optimistic updates |
-| `config.ts` | MobX configuration |
-| `common.ts` | Shared constants and utilities |
-| `index.ts` | Centralized exports |
+| `config.ts`      | MobX configuration                                        |
+| `common.ts`      | Shared constants and utilities                            |
+| `index.ts`       | Centralized exports                                       |
 
 ## Usage Examples
 
@@ -140,7 +142,7 @@ const myStore = (() => {
         state.setPartial({ dataMap: items });
         return items;
       },
-      "FETCH_ITEMS_FAILED"
+      "FETCH_ITEMS_FAILED",
     );
   };
 
@@ -221,6 +223,7 @@ describe("memoStore", () => {
 If you're migrating from old store patterns:
 
 1. **Replace direct state mutations** with `setPartial()`:
+
    ```typescript
    // Before
    store.state.value = 5;
@@ -230,6 +233,7 @@ If you're migrating from old store patterns:
    ```
 
 2. **Wrap API calls** with `executeRequest()`:
+
    ```typescript
    // Before
    const data = await api.fetch();
@@ -244,6 +248,7 @@ If you're migrating from old store patterns:
    ```
 
 3. **Use StandardState** for new stores:
+
    ```typescript
    // Before
    class State {

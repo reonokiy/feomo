@@ -5,6 +5,15 @@ import {
   type StorageAdapter,
 } from "@/core/platform/environment";
 
+if (typeof globalThis !== "undefined") {
+  try {
+    // Expose import.meta.env globally so shared config can access it without using import.meta directly
+    (globalThis as typeof globalThis & { __APP_META_ENV__?: Record<string, string | undefined> }).__APP_META_ENV__ = import.meta.env;
+  } catch (error) {
+    console.warn("Failed to expose import.meta.env:", error);
+  }
+}
+
 class BrowserStorageAdapter implements StorageAdapter {
   getItem(key: string): string | null {
     try {
