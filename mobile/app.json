@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "feomo",
+    "slug": "feomo-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "feomo",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

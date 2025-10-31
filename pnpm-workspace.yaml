@@ -2,4 +2,4 @@ packages:
   - .
   - mobile
 
-nodeLinker: isolated
+nodeLinker: hoisted
