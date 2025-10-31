@@ -74,11 +74,14 @@ function resolveRedirectUri(input: AppConfigInput): string {
   }
 
   if (!input.defaultRedirectPath) {
+    console.error("[Config] Missing defaultRedirectPath, input:", JSON.stringify(input));
     throw new Error("Redirect URI is missing and no default redirect path provided.");
   }
 
-  if (!input.origin) {
-    throw new Error("Application origin is required to compute redirect URI.");
+  if (!input || !input.origin) {
+    console.error("[Config] Missing origin, input:", JSON.stringify(input));
+    console.error("[Config] Using fallback: app://feomo/auth/callback");
+    return "app://feomo/auth/callback";
   }
 
   const base = input.origin.endsWith("/") ? input.origin.slice(0, -1) : input.origin;

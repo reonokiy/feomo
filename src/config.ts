@@ -36,8 +36,15 @@ function getStoredOverrides(): ConfigOverrideMap {
   }
 
   try {
-    const storage = getPlatformEnvironment().storage;
-    const rawValue = storage.getItem(CONFIG_OVERRIDE_STORAGE_KEY);
+    const environment = getPlatformEnvironment();
+    // Check if environment is properly initialized
+    if (!environment || !environment.storage) {
+      console.warn("[Config] Environment not fully initialized, using empty overrides");
+      overrideCache = {};
+      return overrideCache;
+    }
+
+    const rawValue = environment.storage.getItem(CONFIG_OVERRIDE_STORAGE_KEY);
     if (!rawValue) {
       overrideCache = {};
       return overrideCache;
@@ -182,6 +189,12 @@ let cachedConfig: AppConfig | null = null;
 export function getAppConfig(): AppConfig {
   if (!cachedConfig) {
     const environment = getPlatformEnvironment();
+
+    // Check if environment is properly initialized
+    if (!environment || !environment.origin) {
+      console.warn("[Config] Environment not initialized, using fallback origin");
+    }
+
     cachedConfig = buildAppConfig({
       instanceUrl: readEnvValue("VITE_GOTOSOCIAL_INSTANCE_URL"),
       clientId: readEnvValue("VITE_GOTOSOCIAL_CLIENT_ID"),
@@ -191,7 +204,7 @@ export function getAppConfig(): AppConfig {
       scopes: readEnvValue("VITE_GOTOSOCIAL_SCOPES"),
       redirectUri: readEnvValue("VITE_GOTOSOCIAL_REDIRECT_URI"),
       defaultRedirectPath: "/auth/callback",
-      origin: environment.origin,
+      origin: environment?.origin || "app://feomo",
     });
   }
 
