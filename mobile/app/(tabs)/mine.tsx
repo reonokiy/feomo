@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Link } from "expo-router";
 
 import {
   APP_CONFIG_OVERRIDE_KEYS,
@@ -157,79 +158,94 @@ const MineScreen = observer(() => {
             <Text style={styles.secondaryButtonText}>{saving ? "Signing out…" : "Sign out"}</Text>
           </TouchableOpacity>
         ) : (
-          <Text style={styles.helperText}>
-            Configure your GoToSocial instance below, then use the web app to authorise this device.
-          </Text>
+          <View style={styles.unauthenticatedSection}>
+            <Text style={styles.helperText}>
+              Configure your GoToSocial instance below, then use the login page to authorise this
+              device.
+            </Text>
+            <Link href="/login" asChild>
+              <TouchableOpacity style={styles.linkButton} activeOpacity={0.85}>
+                <Text style={styles.linkButtonText}>Go to sign-in</Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
         )}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Instance configuration</Text>
-        <Text style={styles.description}>
-          Update the GoToSocial instance that powers your timeline. Provide client credentials if
-          you have already registered the mobile app, or leave them blank to auto-register.
-        </Text>
-      </View>
+        <View style={styles.settingsCard}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Instance configuration</Text>
+            <Text style={styles.description}>
+              Update the GoToSocial instance that powers your timeline. Provide client credentials if
+              you have already registered the mobile app, or leave them blank to auto-register.
+            </Text>
+          </View>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>Instance URL</Text>
-        <TextInput
-          value={instanceUrl}
-          onChangeText={setInstanceUrl}
-          autoCapitalize="none"
-          autoCorrect={false}
-          placeholder="https://example.social"
-          keyboardType="url"
-          style={styles.input}
-        />
-      </View>
+          <View style={styles.section}>
+            <Text style={styles.label}>Instance URL</Text>
+            <TextInput
+              value={instanceUrl}
+              onChangeText={setInstanceUrl}
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="https://example.social"
+              keyboardType="url"
+              style={styles.input}
+            />
+          </View>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>Client ID (optional)</Text>
-        <TextInput
-          value={clientId}
-          onChangeText={setClientId}
-          autoCapitalize="none"
-          autoCorrect={false}
-          placeholder="Leave empty to auto-create"
-          style={styles.input}
-        />
-      </View>
+          <View style={styles.sectionRow}>
+            <View style={[styles.section, styles.sectionHalf]}>
+              <Text style={styles.label}>Client ID (optional)</Text>
+              <TextInput
+                value={clientId}
+                onChangeText={setClientId}
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="Leave empty to auto-create"
+                style={styles.input}
+              />
+            </View>
+            <View style={[styles.section, styles.sectionHalf]}>
+              <Text style={styles.label}>Client secret (optional)</Text>
+              <TextInput
+                value={clientSecret}
+                onChangeText={setClientSecret}
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="Leave empty to auto-create"
+                style={styles.input}
+              />
+            </View>
+          </View>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>Client secret (optional)</Text>
-        <TextInput
-          value={clientSecret}
-          onChangeText={setClientSecret}
-          autoCapitalize="none"
-          autoCorrect={false}
-          placeholder="Leave empty to auto-create"
-          style={styles.input}
-        />
-      </View>
+          <View style={styles.section}>
+            <Text style={styles.label}>Redirect URI</Text>
+            <Text style={styles.code}>{redirectPreview}</Text>
+            <Text style={styles.helpText}>
+              Add this redirect URI to your GoToSocial OAuth application or leave the credentials empty
+              and the app will register one for you during sign-in.
+            </Text>
+          </View>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>Redirect URI</Text>
-        <Text style={styles.code}>{redirectPreview}</Text>
-        <Text style={styles.helpText}>
-          Add this redirect URI to your GoToSocial OAuth application or leave the credentials empty
-          and the app will register one for you during sign-in.
-        </Text>
-      </View>
+          {statusMessage ? <Text style={styles.status}>{statusMessage}</Text> : null}
 
-      {statusMessage ? <Text style={styles.status}>{statusMessage}</Text> : null}
-
-      <View style={styles.actions}>
-        <TouchableOpacity
-          disabled={saving}
-          style={[styles.primaryButton, saving ? styles.disabled : null]}
-          onPress={handleSave}
-        >
-          <Text style={styles.primaryButtonText}>{saving ? "Saving…" : "Save changes"}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity disabled={saving} style={styles.secondaryButton} onPress={handleReset}>
-          <Text style={styles.secondaryButtonText}>Reset configuration</Text>
-        </TouchableOpacity>
+          <View style={styles.actions}>
+            <TouchableOpacity
+              disabled={saving}
+              style={[styles.primaryButton, saving ? styles.disabled : null]}
+              onPress={handleSave}
+            >
+              <Text style={styles.primaryButtonText}>{saving ? "Saving…" : "Save changes"}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              disabled={saving}
+              style={styles.secondaryButton}
+              onPress={handleReset}
+            >
+              <Text style={styles.secondaryButtonText}>Reset configuration</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -239,21 +255,29 @@ const MineScreen = observer(() => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f7f9fc",
+    backgroundColor: "#f1f5f9",
   },
   container: {
     paddingHorizontal: 20,
     paddingVertical: 24,
     gap: 20,
-    backgroundColor: "transparent",
+    alignItems: "stretch",
   },
   profileCard: {
     borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(15, 23, 42, 0.12)",
-    backgroundColor: "rgba(255,255,255,0.95)",
-    padding: 20,
+    borderColor: "rgba(148,163,184,0.28)",
+    backgroundColor: "#ffffff",
+    padding: 22,
     gap: 16,
+    shadowColor: "rgba(15,23,42,0.05)",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 22,
+    elevation: 1,
+    alignSelf: "center",
+    width: "100%",
+    maxWidth: 640,
   },
   profileRow: {
     flexDirection: "row",
@@ -289,8 +313,48 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "rgba(15, 23, 42, 0.6)",
   },
+  unauthenticatedSection: {
+    gap: 12,
+  },
+  linkButton: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    backgroundColor: "rgba(37, 99, 235, 0.12)",
+  },
+  linkButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#2563eb",
+  },
+  settingsCard: {
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(148,163,184,0.28)",
+    backgroundColor: "#ffffff",
+    padding: 22,
+    gap: 18,
+    shadowColor: "rgba(15,23,42,0.05)",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 22,
+    elevation: 1,
+    alignSelf: "center",
+    width: "100%",
+    maxWidth: 640,
+  },
   section: {
     gap: 8,
+  },
+  sectionRow: {
+    flexDirection: "row",
+    gap: 16,
+    flexWrap: "wrap",
+  },
+  sectionHalf: {
+    flex: 1,
+    minWidth: 160,
   },
   sectionTitle: {
     fontSize: 18,
@@ -327,13 +391,16 @@ const styles = StyleSheet.create({
   status: {
     fontSize: 13,
     color: "#2563eb",
+    marginTop: 4,
   },
   actions: {
     flexDirection: "row",
     gap: 12,
+    flexWrap: "wrap",
   },
   primaryButton: {
-    flex: 1,
+    flexGrow: 1,
+    minWidth: 140,
     backgroundColor: "#2563eb",
     borderRadius: 10,
     paddingVertical: 14,
@@ -345,7 +412,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   secondaryButton: {
-    flex: 1,
+    flexGrow: 1,
+    minWidth: 140,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",

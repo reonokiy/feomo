@@ -1,4 +1,4 @@
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -11,10 +11,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import type { mastodon } from "@feomo/lib/gotosocial";
 import { config } from "@feomo/config";
 import statusStore from "@feomo/store/status";
 import StatusCard from "@mobile/components/status-card";
+import { gtsClient } from "@feomo/lib/gotosocial";
 
 const PLACEHOLDER_HOSTS = ["placeholder.invalid", "your-instance.social"];
 
@@ -150,30 +152,30 @@ const TimelineScreen = observer(() => {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <View style={styles.container}>
-        <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.title}>Timeline</Text>
-          <Text numberOfLines={2} style={styles.subtitle}>
-            {instanceConfigured
-              ? `Browsing posts from ${config.instanceUrl}`
-              : "Configure a GoToSocial instance to start reading your timeline."}
-          </Text>
+        <View style={styles.heroCard}>
+          <View style={styles.heroText}>
+            <Text style={styles.title}>Timeline</Text>
+            <Text numberOfLines={2} style={styles.subtitle}>
+              {instanceConfigured
+                ? `You're connected to ${config.instanceUrl}`
+                : "Select your GoToSocial instance in Mine to start browsing your feed."}
+            </Text>
+          </View>
+          <View style={styles.toggleRow}>
+            <TouchableOpacity
+              style={[styles.toggleButton, localOnly ? styles.toggleActive : null]}
+              onPress={() => setLocalOnly(true)}
+            >
+              <Text style={[styles.toggleText, localOnly ? styles.toggleTextActive : null]}>Local</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toggleButton, !localOnly ? styles.toggleActive : null]}
+              onPress={() => setLocalOnly(false)}
+            >
+              <Text style={[styles.toggleText, !localOnly ? styles.toggleTextActive : null]}>Federated</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <View style={styles.toggleRow}>
-          <TouchableOpacity
-            style={[styles.toggleButton, localOnly ? styles.toggleActive : null]}
-            onPress={() => setLocalOnly(true)}
-          >
-            <Text style={[styles.toggleText, localOnly ? styles.toggleTextActive : null]}>Local</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.toggleButton, !localOnly ? styles.toggleActive : null]}
-            onPress={() => setLocalOnly(false)}
-          >
-            <Text style={[styles.toggleText, !localOnly ? styles.toggleTextActive : null]}>Federated</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
 
       {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
@@ -196,8 +198,8 @@ const TimelineScreen = observer(() => {
           ListEmptyComponent={
             !isLoading ? (
               <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>No posts yet</Text>
-              <Text style={styles.emptyDescription}>Try refreshing or check back later.</Text>
+                <Text style={styles.emptyTitle}>No posts yet</Text>
+                <Text style={styles.emptyDescription}>Try refreshing or check back later.</Text>
               </View>
             ) : null
           }
@@ -205,8 +207,13 @@ const TimelineScreen = observer(() => {
           onEndReachedThreshold={0.5}
           onEndReached={handleLoadMore}
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#333" />
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              tintColor="#0f172a"
+            />
           }
+          showsVerticalScrollIndicator={false}
         />
       ) : null}
 
@@ -214,6 +221,17 @@ const TimelineScreen = observer(() => {
           <View style={styles.loaderOverlay}>
             <ActivityIndicator size="large" />
           </View>
+        ) : null}
+
+        {gtsClient.isAuthenticated() ? (
+          <TouchableOpacity
+            style={styles.composeButton}
+            activeOpacity={0.85}
+            onPress={() => router.push("/compose")}
+          >
+            <Ionicons name="create" size={20} color="white" />
+            <Text style={styles.composeButtonLabel}>Post</Text>
+          </TouchableOpacity>
         ) : null}
       </View>
     </SafeAreaView>
@@ -223,33 +241,42 @@ const TimelineScreen = observer(() => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f7f9fc",
+    backgroundColor: "#f1f5f9",
   },
   container: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
-    backgroundColor: "transparent",
+    paddingTop: 14,
+    paddingBottom: 14,
   },
-  header: {
+  heroCard: {
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: 16,
-    gap: 12,
+    gap: 16,
+    padding: 18,
+    borderRadius: 18,
+    backgroundColor: "#ffffff",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(148,163,184,0.28)",
+    shadowColor: "rgba(15,23,42,0.05)",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 1,
+    marginBottom: 18,
   },
-  headerLeft: {
+  heroText: {
     flex: 1,
-    gap: 6,
+    gap: 8,
   },
   title: {
-    fontSize: 22,
-    fontWeight: "700",
+    fontSize: 24,
+    fontWeight: "800",
     color: "#0f172a",
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: "rgba(15, 23, 42, 0.6)",
   },
   toggleRow: {
@@ -261,8 +288,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(15, 23, 42, 0.2)",
-    backgroundColor: "rgba(255,255,255,0.9)",
+    borderColor: "rgba(148,163,184,0.35)",
+    backgroundColor: "rgba(248,250,252,0.92)",
   },
   toggleActive: {
     backgroundColor: "#2563eb",
@@ -277,16 +304,17 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   errorText: {
-    marginBottom: 12,
+    marginBottom: 16,
     fontSize: 13,
     color: "#dc2626",
   },
   listContent: {
-    paddingBottom: 32,
-    gap: 16,
+    paddingBottom: 36,
+    gap: 18,
+    alignItems: "center",
   },
   separator: {
-    height: 12,
+    height: 16,
   },
   footer: {
     paddingVertical: 16,
@@ -317,6 +345,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(255,255,255,0.6)",
+  },
+  composeButton: {
+    position: "absolute",
+    right: 24,
+    bottom: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 999,
+    backgroundColor: "#2563eb",
+    shadowColor: "rgba(15,23,42,0.25)",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 18,
+    elevation: 4,
+  },
+  composeButtonLabel: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "600",
   },
 });
 

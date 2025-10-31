@@ -91,6 +91,7 @@ function TabBarButton({
       {...pressableProps}
       style={({ pressed }) => [
         styles.tabTrigger,
+        isFocused ? styles.tabTriggerFocused : null,
         pressed ? styles.tabTriggerPressed : null,
       ]}
     >
@@ -116,6 +117,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 6,
+  },
+  tabTriggerFocused: {
+    transform: [{ translateY: -2 }],
   },
   tabTriggerPressed: {
     opacity: 0.85,

@@ -1,5 +1,6 @@
 import "react-native-reanimated";
 
+import "@mobile/setup/polyfills";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { Stack } from "expo-router";
@@ -54,6 +55,10 @@ export default function RootLayout() {
       <ThemeProvider value={theme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ title: "Sign in" }} />
+          <Stack.Screen name="login/callback" options={{ title: "Authorising" }} />
+          <Stack.Screen name="compose" options={{ title: "Compose", presentation: "modal" }} />
+          <Stack.Screen name="status/[id]" options={{ title: "Post" }} />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>
