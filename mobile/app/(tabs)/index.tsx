@@ -17,6 +17,7 @@ import { config } from "@feomo/config";
 import statusStore from "@feomo/store/status";
 import StatusCard from "@mobile/components/status-card";
 import { gtsClient } from "@feomo/lib/gotosocial";
+import { loadTimelineCache, saveTimelineCache } from "@mobile/setup/timeline-cache";
 
 const PLACEHOLDER_HOSTS = ["placeholder.invalid", "your-instance.social"];
 
@@ -49,6 +50,22 @@ const TimelineScreen = observer(() => {
   const instanceConfigured = isInstanceConfigured(config.instanceUrl);
 
   useEffect(() => {
+    const cached = loadTimelineCache("public");
+    if (cached.statuses.length > 0) {
+      const statusMap = { ...statusStore.state.statusMapById };
+      cached.statuses.forEach((cachedStatus) => {
+        statusMap[cachedStatus.id] = cachedStatus;
+      });
+
+      statusStore.state.setPartial({
+        statusMapById: statusMap,
+        publicTimeline: cached.statuses.map((item) => item.id),
+        publicTimelineNextToken: cached.nextToken,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
     if (!instanceConfigured) {
       statusStore.clearPublicTimeline();
       return;
@@ -65,6 +82,7 @@ const TimelineScreen = observer(() => {
         await statusStore.fetchPublicTimeline({
           local: localOnly ? true : undefined,
         });
+        persistTimeline();
       } catch (error) {
         if (cancelled) {
           return;
@@ -90,6 +108,14 @@ const TimelineScreen = observer(() => {
     .map((id) => statusStore.state.statusMapById[id])
     .filter((status): status is mastodon.v1.Status => Boolean(status));
 
+  const persistTimeline = () => {
+    const orderedStatuses = statusStore.state.publicTimeline
+      .map((id) => statusStore.state.statusMapById[id])
+      .filter((status): status is mastodon.v1.Status => Boolean(status));
+
+    saveTimelineCache("public", orderedStatuses, statusStore.state.publicTimelineNextToken);
+  };
+
   const handleRefresh = useCallback(async () => {
     if (!instanceConfigured) {
       return;
@@ -102,6 +128,7 @@ const TimelineScreen = observer(() => {
       await statusStore.fetchPublicTimeline({
         local: localOnly ? true : undefined,
       });
+      persistTimeline();
     } catch (error) {
       console.error("[Timeline] Failed to refresh timeline:", error);
       const message = error instanceof Error ? error.message : "Failed to refresh timeline";
@@ -129,6 +156,7 @@ const TimelineScreen = observer(() => {
         local: localOnly ? true : undefined,
         maxId: nextToken,
       });
+      persistTimeline();
     } catch (error) {
       console.error("[Timeline] Failed to load more statuses:", error);
       const message = error instanceof Error ? error.message : "Failed to load more posts";

@@ -13,12 +13,19 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import statusStore from "@feomo/store/status";
+import { gtsClient } from "@feomo/lib/gotosocial";
 
 const ComposeScreen = () => {
   const [text, setText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handlePost = async () => {
+    if (!gtsClient.isAuthenticated()) {
+      Alert.alert("Not signed in", "Please sign in before creating a post.");
+      router.replace("/login");
+      return;
+    }
+
     const trimmed = text.trim();
     if (!trimmed) {
       Alert.alert("Cannot post", "Please enter some content before submitting.");

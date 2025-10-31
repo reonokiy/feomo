@@ -1,24 +1,23 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Linking from "expo-linking";
 import {
   registerPlatformEnvironment,
   type PlatformEnvironment,
   type StorageAdapter,
 } from "@feomo/core/platform/environment";
+import { getDatabase, initializeDatabase } from "./database";
 
-class AsyncStorageSyncAdapter implements StorageAdapter {
+class SqliteStorageAdapter implements StorageAdapter {
   private cache = new Map<string, string>();
   private isReady = false;
 
   async initialize(): Promise<void> {
     try {
-      const keys = await AsyncStorage.getAllKeys();
-      if (keys.length > 0) {
-        const entries = await AsyncStorage.multiGet(keys);
-        for (const [key, value] of entries) {
-          if (value !== null && value !== undefined) {
-            this.cache.set(key, value);
-          }
+      initializeDatabase();
+      const db = getDatabase();
+      const rows = db.getAllSync<{ key: string; value: string }>("SELECT key, value FROM kv_store");
+      for (const row of rows) {
+        if (row.value !== null && row.value !== undefined) {
+          this.cache.set(row.key, row.value);
         }
       }
     } catch (error) {
@@ -38,16 +37,28 @@ class AsyncStorageSyncAdapter implements StorageAdapter {
 
   setItem(key: string, value: string): void {
     this.cache.set(key, value);
-    void AsyncStorage.setItem(key, value).catch((error) => {
+    try {
+      const db = getDatabase();
+      db.runSync(
+        `INSERT INTO kv_store (key, value)
+         VALUES (?, ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+        key,
+        value,
+      );
+    } catch (error) {
       console.warn("[Environment] Failed to persist storage value:", error);
-    });
+    }
   }
 
   removeItem(key: string): void {
     this.cache.delete(key);
-    void AsyncStorage.removeItem(key).catch((error) => {
+    try {
+      const db = getDatabase();
+      db.runSync("DELETE FROM kv_store WHERE key = ?", key);
+    } catch (error) {
       console.warn("[Environment] Failed to remove storage value:", error);
-    });
+    }
   }
 }
 
@@ -80,7 +91,7 @@ export async function ensurePlatformEnvironment(): Promise<void> {
   }
 
   initializationPromise = (async () => {
-    const storage = new AsyncStorageSyncAdapter();
+    const storage = new SqliteStorageAdapter();
     await storage.initialize();
 
     const environment: PlatformEnvironment = {
